@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verifica Cedolino Pensione</title>
+<style>
+  :root{
+    --carta:#F6F3EC;
+    --inchiostro:#1F2A24;
+    --inchiostro-tenue:#5B6660;
+    --verde-timbro:#2F5D50;
+    --verde-timbro-scuro:#1E3F36;
+    --ruggine:#A6552F;
+    --riga:#D8D2C2;
+    --ok-bg:#EAF2EC;
+    --ok-fg:#1E5B3E;
+    --warn-bg:#FBEFE3;
+    --warn-fg:#8A4B12;
+    --err-bg:#FBEAE7;
+    --err-fg:#A23B23;
+    --card:#FFFDF8;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--carta);
+    color:var(--inchiostro);
+    font-family:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;
+    line-height:1.5;
+  }
+  .sans{font-family:'Avenir Next',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;}
+  header{
+    background:linear-gradient(180deg,var(--verde-timbro-scuro),var(--verde-timbro));
+    color:#F3EFE3;
+    padding:28px 20px 22px;
+    position:relative;
+    overflow:hidden;
+  }
+  header::after{
+    content:"";
+    position:absolute;
+    right:-40px; top:-40px;
+    width:180px; height:180px;
+    border:2px solid rgba(243,239,227,0.18);
+    border-radius:50%;
+  }
+  header h1{
+    margin:0 0 4px;
+    font-size:1.55rem;
+    font-weight:600;
+    letter-spacing:0.2px;
+  }
+  header p{
+    margin:0;
+    font-family:'Avenir Next',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    font-size:0.86rem;
+    color:#D9E3DB;
+    max-width:640px;
+  }
+  main{
+    max-width:640px;
+    margin:0 auto;
+    padding:18px 16px 60px;
+  }
+  .stepnav{
+    display:flex;
+    gap:6px;
+    margin:18px 0 6px;
+    font-family:'Avenir Next',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  }
+  .stepnav button{
+    flex:1;
+    padding:8px 4px;
+    border:1px solid var(--riga);
+    background:var(--card);
+    color:var(--inchiostro-tenue);
+    border-radius:7px;
+    font-size:0.72rem;
+    cursor:pointer;
+  }
+  .stepnav button.active{
+    background:var(--verde-timbro);
+    border-color:var(--verde-timbro);
+    color:#fff;
+    font-weight:600;
+  }
+  section.panel{
+    display:none;
+    background:var(--card);
+    border:1px solid var(--riga);
+    border-radius:10px;
+    padding:20px 18px;
+    margin-top:14px;
+  }
+  section.panel.active{display:block;}
+  h2{
+    font-size:1.12rem;
+    margin:0 0 4px;
+    color:var(--verde-timbro-scuro);
+  }
+  .sub{
+    font-family:'Avenir Next',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    font-size:0.82rem;
+    color:var(--inchiostro-tenue);
+    margin:0 0 16px;
+  }
+  .campo{margin-bottom:14px;}
+  .campo label{
+    display:block;
+    font-family:'Avenir Next',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    font-size:0.82rem;
+    font-weight:600;
+    color:var(--inchiostro);
+    margin-bottom:4px;
+  }
+  .campo .hint{
+    display:block;
+    font-family:'Avenir Next',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    font-size:0.72rem;
+    color:var(--inchiostro-tenue);
+    margin-top:3px;
+  }
+  input[type=number], input[type=text], select{
+    width:100%;
+    padding:10px 11px;
+    border:1px solid var(--riga);
+    border-radius:7px;
+    font-size:1rem;
+    font-family:'Avenir Next',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:#fff;
+    color:var(--inchiostro);
+  }
+  input:focus, select:focus{
+    outline:2px solid var(--verde-timbro);
+    outline-offset:1px;
+  }
+  .riga2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  details.avanzate{
+    margin-top:6px;
+    border-top:1px dashed var(--riga);
+    padding-top:10px;
+  }
+  details.avanzate summary{
+    cursor:pointer;
+    font-family:'Avenir Next',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    font-size:0.8rem;
+    font-weight:600;
+    color:var(--verde-timbro);
+  }
+  .azioni{
+    display:flex;
+    gap:10px;
+    margin-top:18px;
+  }
+  button.btn{
+    font-family:'Avenir Next',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    border:none;
+    border-radius:8px;
+    padding:12px 16px;
+    font-size:0.9rem;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .btn-primario{background:var(--verde-timbro); color:#fff; flex:1;}
+  .btn-secondario{background:transparent; color:var(--verde-timbro); border:1px solid var(--verde-timbro);}
+  .risultato-box{
+    border-radius:9px;
+    padding:14px 16px;
+    margin-top:14px;
+    font-family:'Avenir Next',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  }
+  .risultato-box.ok{background:var(--ok-bg); color:var(--ok-fg);}
+  .risultato-box.warn{background:var(--warn-bg); color:var(--warn-fg);}
+  .risultato-box.err{background:var(--err-bg); color:var(--err-fg);}
+  .risultato-box .cifra{
+    font-family:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;
+    font-size:1.5rem;
+    font-weight:600;
+    margin:2px 0 6px;
+  }
+  table.riepilogo{
+    width:100%;
+    border-collapse:collapse;
+    font-family:'Avenir Next',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    font-size:0.85rem;
+    margin-top:10px;
+  }
+  table.riepilogo td{
+    padding:7px 4px;
+    border-bottom:1px solid var(--riga);
+  }
+  table.riepilogo td:last-child{
+    text-align:right;
+    font-variant-numeric:tabular-nums;
+  }
+  table.riepilogo tr.tot td{
+    font-weight:700;
+    border-top:2px solid var(--inchiostro);
+    border-bottom:none;
+  }
+  .badge-fascia{
+    display:inline-block;
+    font-family:'Avenir Next',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    font-size:0.7rem;
+    padding:2px 8px;
+    border-radius:20px;
+    background:var(--verde-timbro);
+    color:#fff;
+    margin-left:6px;
+  }
+  .disclaimer{
+    font-family:'Avenir Next',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    font-size:0.72rem;
+    color:var(--inchiostro-tenue);
+    margin-top:22px;
+    padding-top:14px;
+    border-top:1px solid var(--riga);
+    line-height:1.5;
+  }
+  footer{
+    text-align:center;
+    font-family:'Avenir Next',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    font-size:0.72rem;
+    color:var(--inchiostro-tenue);
+    padding:10px 20px 30px;
+  }
+  .campo-riga-check{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-family:'Avenir Next',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    font-size:0.82rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Verifica Cedolino Pensione</h1>
+  <p>Controlla se l'aumento da perequazione e il netto in busta corrispondono a quanto previsto dalla normativa. Inserisci i dati del tuo cedolino: nulla viene salvato, ogni calcolo parte da zero.</p>
+</header>
+
+<main>
+  <nav class="stepnav sans">
+    <button data-step="1" class="active">1. Perequazione</button>
+    <button data-step="2">2. Netto</button>
+    <button data-step="3">3. Riepilogo</button>
+  </nav>
+
+  <!-- STEP 1: PEREQUAZIONE -->
+  <section class="panel active" id="panel-1">
+    <h2>Aumento da perequazione</h2>
+    <p class="sub">La rivalutazione annuale non è uguale per tutti: si applica a scaglioni sull'importo della pensione, con percentuali decrescenti oltre certe soglie (multipli del trattamento minimo INPS).</p>
+
+    <div class="campo">
+      <label for="lordoPrecedente">Pensione lorda mensile dell'anno precedente (€)</label>
+      <input type="number" id="lordoPrecedente" inputmode="decimal" step="0.01" placeholder="es. 1500.00">
+      <span class="hint">L'importo lordo mensile prima dell'aumento, come da cedolino di dicembre.</span>
+    </div>
+
+    <div class="riga2">
+      <div class="campo">
+        <label for="mensilita">Mensilità annue</label>
+        <select id="mensilita">
+          <option value="13" selected>13</option>
+          <option value="12">12</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label for="percIstat">Tasso di perequazione (%)</label>
+        <input type="number" id="percIstat" inputmode="decimal" step="0.01" value="1.4">
+        <span class="hint">1,4% provvisorio 2026</span>
+      </div>
+    </div>
+
+    <details class="avanzate">
+      <summary>Parametri normativi (modificabili)</summary>
+      <div class="campo" style="margin-top:12px;">
+        <label for="trattMinimo">Trattamento minimo mensile di riferimento (€)</label>
+        <input type="number" id="trattMinimo" inputmode="decimal" step="0.01" value="603.40">
+        <span class="hint">Usato per calcolare le soglie di 4 e 5 volte il minimo. Valore 2025 usato come base per la rivalutazione 2026.</span>
+      </div>
+      <div class="riga2">
+        <div class="campo">
+          <label for="soglia1x">Moltiplicatore 1ª soglia</label>
+          <input type="number" id="soglia1x" step="0.1" value="4">
+        </div>
+        <div class="campo">
+          <label for="soglia2x">Moltiplicatore 2ª soglia</label>
+          <input type="number" id="soglia2x" step="0.1" value="5">
+        </div>
+      </div>
+      <div class="riga2">
+        <div class="campo">
+          <label for="quota1">% riconosciuta fino a 1ª soglia</label>
+          <input type="number" id="quota1" step="1" value="100">
+        </div>
+        <div class="campo">
+          <label for="quota2">% riconosciuta tra 1ª e 2ª soglia</label>
+          <input type="number" id="quota2" step="1" value="90">
+        </div>
+      </div>
+      <div class="campo">
+        <label for="quota3">% riconosciuta oltre la 2ª soglia</label>
+        <input type="number" id="quota3" step="1" value="75">
+      </div>
+    </details>
+
+    <div class="campo" style="margin-top:16px;">
+      <label for="lordoNuovoCedolino">Pensione lorda mensile sul nuovo cedolino (€) — opzionale</label>
+      <input type="number" id="lordoNuovoCedolino" inputmode="decimal" step="0.01" placeholder="Se vuoi confrontarlo con quello atteso">
+    </div>
+
+    <div id="risultatoPereq"></div>
+
+    <div class="azioni">
+      <button class="btn btn-primario sans" onclick="calcolaPereq()">Calcola aumento atteso</button>
+    </div>
+  </section>
+
+  <!-- STEP 2: NETTO -->
+  <section class="panel" id="panel-2">
+    <h2>Ricalcolo del netto</h2>
+    <p class="sub">Stima IRPEF, detrazione pensionati e addizionali regionale/comunale sull'importo lordo annuo, per confrontarla con il netto realmente accreditato.</p>
+
+    <div class="campo">
+      <label for="lordoAnnuoNetto">Pensione lorda mensile da usare per il calcolo (€)</label>
+      <input type="number" id="lordoAnnuoNetto" inputmode="decimal" step="0.01" placeholder="es. 1521.00">
+      <span class="hint">Puoi usare l'importo del nuovo cedolino, con o senza l'aumento di perequazione.</span>
+    </div>
+
+    <div class="riga2">
+      <div class="campo">
+        <label for="mensilitaNetto">Mensilità annue</label>
+        <select id="mensilitaNetto">
+          <option value="13" selected>13</option>
+          <option value="12">12</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label for="etaSotto75">Fascia d'età</label>
+        <select id="etaSotto75">
+          <option value="std" selected>Standard</option>
+        </select>
+        <span class="hint">Detrazione art. 13 c.3 TUIR</span>
+      </div>
+    </div>
+    
+    <div class="campo">
+      <label for="detrFamiliariMese">Detrazioni familiari a carico (€/mese) — opzionale</label>
+      <input type="number" id="detrFamiliariMese" inputmode="decimal" step="0.01" placeholder="es. 69.00">
+      <span class="hint">Inserisci l'importo mensile se indicato sul cedolino per coniuge o figli.</span>
+    </div>
+
+    <div class="riga2">
+      <div class="campo">
+        <label for="addRegionaleScaglioni">Addizionale regionale</label>
+        <select id="addRegionaleScaglioni">
+          <option value="scaglioni" selected>A scaglioni (1.33% / 1.93% / 2.63% / 3.33%)</option>
+          <option value="manuale">Aliquota fissa manuale (%)</option>
+        </select>
+      </div>
+      <div class="campo" id="boxAddRegManuale" style="display:none;">
+        <label for="addRegionale">Aliquota regionale fissa (%)</label>
+        <input type="number" id="addRegionale" inputmode="decimal" step="0.01" placeholder="es. 1.73">
+      </div>
+      <div class="campo">
+        <label for="addComunale">Addizionale comunale (%)</label>
+        <input type="number" id="addComunale" inputmode="decimal" step="0.01" placeholder="es. 0.80">
+      </div>
+    </div>
+
+    <div class="campo">
+      <label for="altreTrattenute">Altre trattenute mensili fisse (€) — opzionale</label>
+      <input type="number" id="altreTrattenute" inputmode="decimal" step="0.01" placeholder="es. cessione del quinto, quota associativa">
+    </div>
+
+    <div class="campo">
+      <label for="nettoReale">Netto mensile realmente accreditato (€) — opzionale</label>
+      <input type="number" id="nettoReale" inputmode="decimal" step="0.01" placeholder="Se vuoi confrontarlo con quello stimato">
+    </div>
+
+    <div id="risultatoNetto"></div>
+
+    <div class="azioni">
+      <button class="btn btn-primario sans" onclick="calcolaNetto()">Calcola netto stimato</button>
+    </div>
+  </section>
+
+  <!-- STEP 3: RIEPILOGO -->
+  <section class="panel" id="panel-3">
+    <h2>Riepilogo verifica</h2>
+    <p class="sub">Confronto tra quanto atteso dal calcolo e quanto riportato sul cedolino.</p>
+    <div id="riepilogoFinale"></div>
+  </section>
+
+  <div class="disclaimer">
+    Strumento di stima basato sulle regole generali 2026 (tasso di perequazione provvisorio 1,4%, scaglioni IRPEF a tre aliquote 23/33/43%, detrazione pensionati art. 13 c.3 TUIR). Non considera casi particolari come arretrati, conguagli, ANF, redditi ulteriori, detrazioni per familiari a carico (se non specificate manualmente), pensioni estere o gestioni con regole proprie. Non sostituisce una verifica con INPS, CAF o patronato. Prima di contestare un cedolino, fai controllare i dati da un consulente.
+  </div>
+</main>
+
+<footer>Nessun dato viene salvato o inviato: tutto avviene nel browser.</footer>
+
+<script>
+function fnum(v){ return v===''||v===null||isNaN(v) ? null : parseFloat(v); }
+function euro(n){ return n.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €'; }
+
+// Toggle per aliquota regionale manuale/scaglioni
+document.getElementById('addRegionaleScaglioni').addEventListener('change', function(){
+  document.getElementById('boxAddRegManuale').style.display = this.value === 'manuale' ? 'block' : 'none';
+});
+
+// --- Navigation ---
+document.querySelectorAll('.stepnav button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.stepnav button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('section.panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-'+btn.dataset.step).classList.add('active');
+    if(btn.dataset.step==='3') aggiornaRiepilogo();
+  });
+});
+
+let statoPereq = null;
+let statoNetto = null;
+
+// --- STEP 1: Perequazione a scaglioni progressivi ---
+function calcolaPereq(){
+  const lordo = fnum(document.getElementById('lordoPrecedente').value);
+  const box = document.getElementById('risultatoPereq');
+  if(lordo===null || lordo<=0){
+    box.innerHTML = '<div class="risultato-box err">Inserisci la pensione lorda mensile dell\'anno precedente.</div>';
+    return;
+  }
+  const perc = fnum(document.getElementById('percIstat').value) / 100;
+  const tm = fnum(document.getElementById('trattMinimo').value);
+  const s1x = fnum(document.getElementById('soglia1x').value);
+  const s2x = fnum(document.getElementById('soglia2x').value);
+  const q1 = fnum(document.getElementById('quota1').value) / 100;
+  const q2 = fnum(document.getElementById('quota2').value) / 100;
+  const q3 = fnum(document.getElementById('quota3').value) / 100;
+
+  const soglia1 = tm * s1x;
+  const soglia2 = tm * s2x;
+
+  const tranche1 = Math.min(lordo, soglia1);
+  const tranche2 = Math.max(0, Math.min(lordo, soglia2) - soglia1);
+  const tranche3 = Math.max(0, lordo - soglia2);
+
+  const aumento = tranche1*perc*q1 + tranche2*perc*q2 + tranche3*perc*q3;
+  const nuovoAtteso = lordo + aumento;
+
+  let fasciaLabel = tranche3>0 ? 'oltre '+s2x+'× minimo' : (tranche2>0 ? 'tra '+s1x+'× e '+s2x+'× minimo' : 'fino a '+s1x+'× minimo');
+
+  statoPereq = {lordo, aumento, nuovoAtteso};
+
+  let html = '<div class="risultato-box ok">';
+  html += 'Aumento lordo mensile atteso <span class="badge-fascia">'+fasciaLabel+'</span>';
+  html += '<div class="cifra">+ '+euro(aumento)+' /mese</div>';
+  html += 'Nuova pensione lorda attesa: <strong>'+euro(nuovoAtteso)+'</strong> /mese';
+  html += '<table class="riepilogo">';
+  html += '<tr><td>Quota fino a '+s1x+'× minimo ('+euro(tranche1)+')</td><td>+'+euro(tranche1*perc*q1)+'</td></tr>';
+  if(tranche2>0) html += '<tr><td>Quota tra '+s1x+'× e '+s2x+'× minimo ('+euro(tranche2)+')</td><td>+'+euro(tranche2*perc*q2)+'</td></tr>';
+  if(tranche3>0) html += '<tr><td>Quota oltre '+s2x+'× minimo ('+euro(tranche3)+')</td><td>+'+euro(tranche3*perc*q3)+'</td></tr>';
+  html += '</table>';
+  html += '</div>';
+
+  const lordoNuovo = fnum(document.getElementById('lordoNuovoCedolino').value);
+  if(lordoNuovo!==null){
+    const scarto = lordoNuovo - nuovoAtteso;
+    let cls = Math.abs(scarto) < 0.5 ? 'ok' : (Math.abs(scarto) < 3 ? 'warn' : 'err');
+    let msg = Math.abs(scarto) < 0.5
+      ? 'Il lordo sul cedolino corrisponde a quanto atteso.'
+      : (scarto > 0
+          ? 'Il cedolino riporta '+euro(scarto)+' in più del previsto: potrebbe includere arretrati, conguagli o altre variazioni.'
+          : 'Il cedolino riporta '+euro(Math.abs(scarto))+' in meno del previsto: verifica con INPS se è un errore o se dipende da altre variazioni.');
+    html += '<div class="risultato-box '+cls+'">Confronto con il cedolino<div class="cifra">'+euro(lordoNuovo)+'</div>'+msg+'</div>';
+  }
+
+  box.innerHTML = html;
+}
+
+// --- STEP 2: Netto ---
+function irpefLorda(redditoAnnuo){
+  let imposta = 0;
+  if(redditoAnnuo<=28000){
+    imposta = redditoAnnuo*0.23;
+  } else if(redditoAnnuo<=50000){
+    imposta = 28000*0.23 + (redditoAnnuo-28000)*0.33;
+  } else {
+    imposta = 28000*0.23 + 22000*0.33 + (redditoAnnuo-50000)*0.43;
+  }
+  return imposta;
+}
+
+function detrazionePensione(redditoAnnuo){
+  if(redditoAnnuo<=8500){
+    return 1955;
+  } else if(redditoAnnuo<=28000){
+    return 700 + 1255 * ((28000-redditoAnnuo)/19500);
+  } else if(redditoAnnuo<=50000){
+    return 700 * ((50000-redditoAnnuo)/22000);
+  }
+  return 0;
+}
+
+function calcolaAddizionaleRegionale(redditoAnnuo){
+  let imposta = 0;
+  if(redditoAnnuo <= 15000){
+    imposta = redditoAnnuo * 0.0133;
+  } else if(redditoAnnuo <= 28000){
+    imposta = 15000 * 0.0133 + (redditoAnnuo - 15000) * 0.0193;
+  } else if(redditoAnnuo <= 50000){
+    imposta = 15000 * 0.0133 + 13000 * 0.0193 + (redditoAnnuo - 28000) * 0.0263;
+  } else {
+    imposta = 15000 * 0.0133 + 13000 * 0.0193 + 22000 * 0.0263 + (redditoAnnuo - 50000) * 0.0333;
+  }
+  return imposta;
+}
+
+function calcolaNetto(){
+  const box = document.getElementById('risultatoNetto');
+  const lordoMese = fnum(document.getElementById('lordoAnnuoNetto').value);
+  if(lordoMese===null || lordoMese<=0){
+    box.innerHTML = '<div class="risultato-box err">Inserisci l\'importo lordo mensile da usare per il calcolo.</div>';
+    return;
+  }
+  const mensilita = parseInt(document.getElementById('mensilitaNetto').value);
+  const tipoAddReg = document.getElementById('addRegionaleScaglioni').value;
+  
+  const redditoAnnuo = lordoMese * mensilita;
+  const irpefL = irpefLorda(redditoAnnuo);
+  
+  // Detrazioni
+  const detrPens = detrazionePensione(redditoAnnuo);
+  const detrFamAnnua = (fnum(document.getElementById('detrFamiliariMese').value) || 0) * mensilita;
+  
+  const totaleDetrazioni = Math.min(detrPens + detrFamAnnua, irpefL);
+  const irpefNetta = irpefL - totaleDetrazioni;
+
+  let addizRegionale = 0;
+  if(tipoAddReg === 'scaglioni'){
+    addizRegionale = calcolaAddizionaleRegionale(redditoAnnuo);
+  } else {
+    const addReg = (fnum(document.getElementById('addRegionale').value) || 0) / 100;
+    addizRegionale = redditoAnnuo * addReg;
+  }
+
+  const addCom = (fnum(document.getElementById('addComunale').value) || 0) / 100;
+  const addizComunale = redditoAnnuo * addCom;
+  const altreTratt = fnum(document.getElementById('altreTrattenute').value) || 0;
+
+  const trattenuteFiscaliAnnue = irpefNetta + addizRegionale + addizComunale;
+  const nettoAnnuo = redditoAnnuo - trattenuteFiscaliAnnue;
+  const nettoMeseBase = nettoAnnuo / mensilita;
+  const nettoMeseFinale = nettoMeseBase - altreTratt;
+
+  statoNetto = {lordoMese, nettoMeseFinale, redditoAnnuo, irpefNetta, addizRegionale, addizComunale, altreTratt, mensilita};
+
+  let html = '<div class="risultato-box ok">';
+  html += 'Netto mensile stimato';
+  html += '<div class="cifra">'+euro(nettoMeseFinale)+'</div>';
+  html += '<table class="riepilogo">';
+  html += '<tr><td>Reddito lordo annuo ('+mensilita+' mensilità)</td><td>'+euro(redditoAnnuo)+'</td></tr>';
+  html += '<tr><td>IRPEF lorda annua</td><td>'+euro(irpefL)+'</td></tr>';
+  html += '<tr><td>Detrazione pensionati</td><td>&minus; '+euro(detrPens)+'</td></tr>';
+  if(detrFamAnnua > 0) html += '<tr><td>Detrazioni familiari a carico</td><td>&minus; '+euro(detrFamAnnua)+'</td></tr>';
+  if((detrPens + detrFamAnnua) > irpefL) html += '<tr><td>Capienza fiscale (limite)</td><td>(applicato max '+euro(irpefL)+')</td></tr>';
+  html += '<tr><td>IRPEF netta annua</td><td>'+euro(irpefNetta)+'</td></tr>';
+  if(addizRegionale>0) html += '<tr><td>Addizionale regionale annua (a scaglioni)</td><td>'+euro(addizRegionale)+'</td></tr>';
+  if(addCom>0) html += '<tr><td>Addizionale comunale annua</td><td>'+euro(addizComunale)+'</td></tr>';
+  html += '<tr class="tot"><td>Netto mensile (prima di altre trattenute)</td><td>'+euro(nettoMeseBase)+'</td></tr>';
+  if(altreTratt>0) html += '<tr><td>Altre trattenute mensili</td><td>&minus; '+euro(altreTratt)+'</td></tr>';
+  html += '</table></div>';
+
+  const nettoReale = fnum(document.getElementById('nettoReale').value);
+  if(nettoReale!==null){
+    const scarto = nettoReale - nettoMeseFinale;
+    let cls = Math.abs(scarto) < 3 ? 'ok' : (Math.abs(scarto) < 15 ? 'warn' : 'err');
+    let msg = Math.abs(scarto) < 3
+      ? 'Il netto sul cedolino corrisponde alla stima.'
+      : (scarto > 0
+          ? 'Il cedolino riporta '+euro(scarto)+' in più della stima: possono incidere arretrati o altre voci non considerate qui.'
+          : 'Il cedolino riporta '+euro(Math.abs(scarto))+' in meno della stima: verifica le addizionali comunale/regionale inserite e le trattenute presenti sul cedolino.');
+    html += '<div class="risultato-box '+cls+'">Confronto con il cedolino<div class="cifra">'+euro(nettoReale)+'</div>'+msg+'</div>';
+  }
+
+  box.innerHTML = html;
+}
+
+// --- STEP 3: Riepilogo ---
+function aggiornaRiepilogo(){
+  const box = document.getElementById('riepilogoFinale');
+  if(!statoPereq && !statoNetto){
+    box.innerHTML = '<div class="risultato-box warn">Compila prima le sezioni "Perequazione" e "Netto".</div>';
+    return;
+  }
+  let html = '';
+  if(statoPereq){
+    html += '<div class="risultato-box ok">Aumento lordo atteso<div class="cifra">+ '+euro(statoPereq.aumento)+' /mese</div>Nuovo lordo atteso: '+euro(statoPereq.nuovoAtteso)+'</div>';
+  } else {
+    html += '<div class="risultato-box warn">Sezione perequazione non ancora calcolata.</div>';
+  }
+  if(statoNetto){
+    html += '<div class="risultato-box ok">Netto mensile stimato<div class="cifra">'+euro(statoNetto.nettoMeseFinale)+'</div>su un lordo di '+euro(statoNetto.lordoMese)+' al mese</div>';
+  } else {
+    html += '<div class="risultato-box warn">Sezione netto non ancora calcolata.</div>';
+  }
+  box.innerHTML = html;
+}
+</script>
+
+</body>
+</html>
