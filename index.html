@@ -3,6 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1E3F36">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" type="image/png" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
 <title>Verifica Cedolino Pensione</title>
 <style>
   :root{
@@ -322,7 +328,7 @@
   <!-- STEP 2: NETTO -->
   <section class="panel" id="panel-2">
     <h2>Ricalcolo del netto</h2>
-    <p class="sub">Stima IRPEF, detrazione pensionati e addizionali regionale/comunale sull'importo lordo annuo, per confrontarla con il netto realmente accreditato.</p>
+    <p class="sub">Stima IRPEF, detrazione pensionati e addizionali regionale/comunale sull'importo lordo annuo. Il risultato è un netto mensile medio teorico: il singolo cedolino può differire per modalità e mesi di trattenuta delle addizionali, acconti, saldi e conguagli.</p>
 
     <div class="campo">
       <label for="lordoAnnuoNetto">Pensione lorda mensile da usare per il calcolo (€)</label>
@@ -349,7 +355,7 @@
     
     <div class="campo">
       <label for="detrFamiliariMese">Detrazioni familiari a carico (€/mese) — opzionale</label>
-      <input type="number" id="detrFamiliariMese" inputmode="decimal" step="0.01" placeholder="es. 69.00">
+      <input type="number" id="detrFamiliariMese" inputmode="decimal" step="0.01" value="55.24" placeholder="es. 55.24">
       <span class="hint">Inserisci l'importo mensile se indicato sul cedolino per coniuge o figli.</span>
     </div>
 
@@ -357,7 +363,7 @@
       <div class="campo">
         <label for="addRegionaleScaglioni">Addizionale regionale</label>
         <select id="addRegionaleScaglioni">
-          <option value="scaglioni" selected>A scaglioni (1.33% / 1.93% / 2.63% / 3.33%)</option>
+          <option value="scaglioni" selected>A scaglioni (1,33% / 1,93% / 2,78% / 3,33%)</option>
           <option value="manuale">Aliquota fissa manuale (%)</option>
         </select>
       </div>
@@ -367,8 +373,14 @@
       </div>
       <div class="campo">
         <label for="addComunale">Addizionale comunale (%)</label>
-        <input type="number" id="addComunale" inputmode="decimal" step="0.01" placeholder="es. 0.80">
+        <input type="number" id="addComunale" inputmode="decimal" step="0.01" value="0.80" placeholder="es. 0,80">
       </div>
+    </div>
+
+    <div class="campo">
+      <label for="trattenutaSindacale">Trattenuta sindacale mensile (€)</label>
+      <input type="number" id="trattenutaSindacale" inputmode="decimal" step="0.01" readonly>
+      <span class="hint">Calcolata automaticamente sulla rata lorda: 0,50% fino al trattamento minimo INPS 2026 (611,85 €), 0,40% sulla quota tra 1× e 2× il minimo, 0,35% sulla quota eccedente 2× il minimo.</span>
     </div>
 
     <div class="campo">
@@ -396,7 +408,7 @@
   </section>
 
   <div class="disclaimer">
-    Strumento di stima basato sulle regole generali 2026 (tasso di perequazione provvisorio 1,4%, scaglioni IRPEF a tre aliquote 23/33/43%, detrazione pensionati art. 13 c.3 TUIR). Non considera casi particolari come arretrati, conguagli, ANF, redditi ulteriori, detrazioni per familiari a carico (se non specificate manualmente), pensioni estere o gestioni con regole proprie. Non sostituisce una verifica con INPS, CAF o patronato. Prima di contestare un cedolino, fai controllare i dati da un consulente.
+    Strumento di stima basato sulle regole generali 2026 (tasso di perequazione provvisorio 1,4%, scaglioni IRPEF a tre aliquote 23/33/43%, detrazione pensionati art. 13 c.3 TUIR, addizionale regionale Emilia-Romagna 1,33% / 1,93% / 2,78% / 3,33%). Non considera casi particolari come arretrati, conguagli, ANF, redditi ulteriori, detrazioni per familiari a carico (se non specificate manualmente), pensioni estere o gestioni con regole proprie. Non sostituisce una verifica con INPS, CAF o patronato. Prima di contestare un cedolino, fai controllare i dati da un consulente.
   </div>
 </main>
 
@@ -512,11 +524,22 @@ function calcolaAddizionaleRegionale(redditoAnnuo){
   } else if(redditoAnnuo <= 28000){
     imposta = 15000 * 0.0133 + (redditoAnnuo - 15000) * 0.0193;
   } else if(redditoAnnuo <= 50000){
-    imposta = 15000 * 0.0133 + 13000 * 0.0193 + (redditoAnnuo - 28000) * 0.0263;
+    imposta = 15000 * 0.0133 + 13000 * 0.0193 + (redditoAnnuo - 28000) * 0.0278;
   } else {
     imposta = 15000 * 0.0133 + 13000 * 0.0193 + 22000 * 0.0263 + (redditoAnnuo - 50000) * 0.0333;
   }
   return imposta;
+}
+
+function calcolaTrattenutaSindacale(lordoMese){
+  const trattamentoMinimo2026 = 611.85;
+  const sogliaDoppioMinimo = trattamentoMinimo2026 * 2;
+
+  const quota1 = Math.min(lordoMese, trattamentoMinimo2026);
+  const quota2 = Math.max(0, Math.min(lordoMese, sogliaDoppioMinimo) - trattamentoMinimo2026);
+  const quota3 = Math.max(0, lordoMese - sogliaDoppioMinimo);
+
+  return quota1 * 0.005 + quota2 * 0.004 + quota3 * 0.0035;
 }
 
 function calcolaNetto(){
@@ -549,17 +572,19 @@ function calcolaNetto(){
 
   const addCom = (fnum(document.getElementById('addComunale').value) || 0) / 100;
   const addizComunale = redditoAnnuo * addCom;
+  const trattenutaSindacale = calcolaTrattenutaSindacale(lordoMese);
+  document.getElementById('trattenutaSindacale').value = trattenutaSindacale.toFixed(2);
   const altreTratt = fnum(document.getElementById('altreTrattenute').value) || 0;
 
   const trattenuteFiscaliAnnue = irpefNetta + addizRegionale + addizComunale;
   const nettoAnnuo = redditoAnnuo - trattenuteFiscaliAnnue;
   const nettoMeseBase = nettoAnnuo / mensilita;
-  const nettoMeseFinale = nettoMeseBase - altreTratt;
+  const nettoMeseFinale = nettoMeseBase - trattenutaSindacale - altreTratt;
 
-  statoNetto = {lordoMese, nettoMeseFinale, redditoAnnuo, irpefNetta, addizRegionale, addizComunale, altreTratt, mensilita};
+  statoNetto = {lordoMese, nettoMeseFinale, redditoAnnuo, irpefNetta, addizRegionale, addizComunale, trattenutaSindacale, altreTratt, mensilita};
 
   let html = '<div class="risultato-box ok">';
-  html += 'Netto mensile stimato';
+  html += 'Netto mensile medio stimato';
   html += '<div class="cifra">'+euro(nettoMeseFinale)+'</div>';
   html += '<table class="riepilogo">';
   html += '<tr><td>Reddito lordo annuo ('+mensilita+' mensilità)</td><td>'+euro(redditoAnnuo)+'</td></tr>';
@@ -570,19 +595,20 @@ function calcolaNetto(){
   html += '<tr><td>IRPEF netta annua</td><td>'+euro(irpefNetta)+'</td></tr>';
   if(addizRegionale>0) html += '<tr><td>Addizionale regionale annua (a scaglioni)</td><td>'+euro(addizRegionale)+'</td></tr>';
   if(addCom>0) html += '<tr><td>Addizionale comunale annua</td><td>'+euro(addizComunale)+'</td></tr>';
-  html += '<tr class="tot"><td>Netto mensile (prima di altre trattenute)</td><td>'+euro(nettoMeseBase)+'</td></tr>';
+  html += '<tr class="tot"><td>Netto mensile medio (prima di altre trattenute)</td><td>'+euro(nettoMeseBase)+'</td></tr>';
+  html += '<tr><td>Trattenuta sindacale mensile</td><td>&minus; '+euro(trattenutaSindacale)+'</td></tr>';
   if(altreTratt>0) html += '<tr><td>Altre trattenute mensili</td><td>&minus; '+euro(altreTratt)+'</td></tr>';
   html += '</table></div>';
 
   const nettoReale = fnum(document.getElementById('nettoReale').value);
   if(nettoReale!==null){
     const scarto = nettoReale - nettoMeseFinale;
-    let cls = Math.abs(scarto) < 3 ? 'ok' : (Math.abs(scarto) < 15 ? 'warn' : 'err');
-    let msg = Math.abs(scarto) < 3
-      ? 'Il netto sul cedolino corrisponde alla stima.'
+    let cls = Math.abs(scarto) < 5 ? 'ok' : (Math.abs(scarto) < 30 ? 'warn' : 'err');
+    let msg = Math.abs(scarto) < 5
+      ? 'Il netto sul cedolino è compatibile con la stima media.'
       : (scarto > 0
-          ? 'Il cedolino riporta '+euro(scarto)+' in più della stima: possono incidere arretrati o altre voci non considerate qui.'
-          : 'Il cedolino riporta '+euro(Math.abs(scarto))+' in meno della stima: verifica le addizionali comunale/regionale inserite e le trattenute presenti sul cedolino.');
+          ? 'Il cedolino riporta '+euro(scarto)+' in più della stima media: possono incidere addizionali trattenute in mesi diversi, arretrati, conguagli o altre voci non considerate qui.'
+          : 'Il cedolino riporta '+euro(Math.abs(scarto))+' in meno della stima media: verifica addizionali, conguagli e altre trattenute presenti sul cedolino.');
     html += '<div class="risultato-box '+cls+'">Confronto con il cedolino<div class="cifra">'+euro(nettoReale)+'</div>'+msg+'</div>';
   }
 
@@ -603,7 +629,7 @@ function aggiornaRiepilogo(){
     html += '<div class="risultato-box warn">Sezione perequazione non ancora calcolata.</div>';
   }
   if(statoNetto){
-    html += '<div class="risultato-box ok">Netto mensile stimato<div class="cifra">'+euro(statoNetto.nettoMeseFinale)+'</div>su un lordo di '+euro(statoNetto.lordoMese)+' al mese</div>';
+    html += '<div class="risultato-box ok">Netto mensile medio stimato<div class="cifra">'+euro(statoNetto.nettoMeseFinale)+'</div>su un lordo di '+euro(statoNetto.lordoMese)+' al mese</div>';
   } else {
     html += '<div class="risultato-box warn">Sezione netto non ancora calcolata.</div>';
   }
@@ -611,5 +637,14 @@ function aggiornaRiepilogo(){
 }
 </script>
 
+<script>
+if ('serviceWorker' in navigator && window.isSecureContext) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js').catch(error => {
+      console.warn('Impossibile attivare la modalità offline:', error);
+    });
+  });
+}
+</script>
 </body>
 </html>
