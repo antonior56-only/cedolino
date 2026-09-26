@@ -64,6 +64,20 @@
     color:#D9E3DB;
     max-width:640px;
   }
+  #installButton{
+    margin-top:14px;
+    padding:9px 15px;
+    border:1px solid #F3EFE3;
+    border-radius:8px;
+    background:#F3EFE3;
+    color:var(--verde-timbro-scuro);
+    font:600 0.85rem 'Avenir Next',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    cursor:pointer;
+    position:relative;
+    z-index:1;
+  }
+  #installButton[hidden],#installHelp[hidden]{display:none;}
+  #installHelp{margin-top:8px;}
   main{
     max-width:640px;
     margin:0 auto;
@@ -245,6 +259,8 @@
 <header>
   <h1>Verifica Cedolino Pensione</h1>
   <p>Controlla se l'aumento da perequazione e il netto in busta corrispondono a quanto previsto dalla normativa. Inserisci i dati del tuo cedolino: nulla viene salvato, ogni calcolo parte da zero.</p>
+  <button id="installButton" type="button" hidden>Installa app</button>
+  <p id="installHelp" role="status" hidden></p>
 </header>
 
 <main>
@@ -638,6 +654,41 @@ function aggiornaRiepilogo(){
 </script>
 
 <script>
+let installPrompt = null;
+const installButton = document.getElementById('installButton');
+const installHelp = document.getElementById('installHelp');
+const installedMode = () => window.matchMedia('(display-mode: standalone)').matches ||
+  window.matchMedia('(display-mode: fullscreen)').matches || navigator.standalone === true;
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+function updateInstallButton() {
+  installButton.hidden = installedMode() || !window.isSecureContext || !(installPrompt || isIOS);
+  if (installedMode()) installHelp.hidden = true;
+}
+window.addEventListener('beforeinstallprompt', event => {
+  event.preventDefault();
+  installPrompt = event;
+  updateInstallButton();
+});
+window.addEventListener('appinstalled', () => {
+  installPrompt = null;
+  installButton.hidden = true;
+  installHelp.hidden = true;
+});
+window.matchMedia('(display-mode: standalone)').addEventListener?.('change', updateInstallButton);
+installButton.addEventListener('click', async () => {
+  if (installPrompt) {
+    const prompt = installPrompt;
+    installPrompt = null;
+    installButton.hidden = true;
+    await prompt.prompt();
+    await prompt.userChoice;
+  } else if (isIOS) {
+    installHelp.textContent = 'Su iPhone o iPad: apri il menu Condividi del browser e scegli “Aggiungi alla schermata Home”.';
+    installHelp.hidden = false;
+  }
+});
+updateInstallButton();
 if ('serviceWorker' in navigator && window.isSecureContext) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./service-worker.js').catch(error => {
